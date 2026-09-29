@@ -386,7 +386,7 @@ with col_map:
     st_folium(m, height=450, width="100%")
 
 with col_tbl:
-    disp_df = df[["Hospital Name", "Current Medicine Stock", "Days Left", "Urgency", "Severity Index"]].copy()
+    disp_df = df[["Hospital Name", "Current_Waste_KG", "Days Left", "Urgency", "Severity Index"]].copy()
     st.dataframe(disp_df, height=450, use_container_width=True)
 
 # =============================================================================
