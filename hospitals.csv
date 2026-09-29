@@ -1,4 +1,4 @@
-Hospital Name,Lat,Lon,Current_Waste_KG,Daily_Generation_Rate,Max_Bin_Capacity
+Hospital Name,Latitude,Longitude,Current_Waste_KG,Daily_Generation_Rate,Max_Bin_Capacity
 Central Incinerator (Rajkot Hub),22.3000,70.8000,0,0,10000
 Guru Gobind Singh Government Hospital (Jamnagar),22.4700,70.0700,45,15,50
 Samarpan Hospital (Jamnagar),22.4800,70.0500,10,5,50
