@@ -245,14 +245,19 @@ def load_data(path="hospitals.csv"):
 
 def enrich_data(raw: pd.DataFrame, surge: float, buffer: int) -> pd.DataFrame:
     df = raw.copy()
+    df.columns = df.columns.str.strip() # Remove any accidental spaces
+    
+    # Safe column fallback for Facility Name
+    name_col = "Name" if "Name" in df.columns else ("Hospital Name" if "Hospital Name" in df.columns else df.columns[0])
+    df["Facility_Name_Clean"] = df[name_col]
+
     df["Current_Waste_KG"] = pd.to_numeric(df["Current_Waste_KG"], errors="coerce").fillna(0)
     df["Max_Bin_Capacity"] = pd.to_numeric(df["Max_Bin_Capacity"], errors="coerce").fillna(100)
     
-    # Use exact CSV headers 'Lat' and 'Lon'
-    df["Latitude"] = pd.to_numeric(df["Lat"], errors="coerce")
-    df["Longitude"] = pd.to_numeric(df["Lon"], errors="coerce")
+    df["Latitude"] = pd.to_numeric(df["Lat"] if "Lat" in df.columns else df["Latitude"], errors="coerce")
+    df["Longitude"] = pd.to_numeric(df["Lon"] if "Lon" in df.columns else df["Longitude"], errors="coerce")
     
-    df["Facility Type"] = df["Name"].apply(infer_facility_type)
+    df["Facility Type"] = df["Facility_Name_Clean"].apply(infer_facility_type)
     df["Daily_Generation_Rate"] = pd.to_numeric(df["Daily_Generation_Rate"], errors="coerce").fillna(5)
     df["Effective Generation"] = (df["Daily_Generation_Rate"] * surge).round(2)
     
@@ -267,6 +272,9 @@ def enrich_data(raw: pd.DataFrame, surge: float, buffer: int) -> pd.DataFrame:
     df["Urgency"] = df["Days Left"].apply(get_urgency)
     df["Severity Index"] = df["Days Left"].apply(lambda d: round(max(0.0, min(10.0, (5.0 - d) * 2.0)), 1))
     df["Projected Stock"] = df["Current_Waste_KG"].copy()
+    
+    # Map back to standard name column for the rest of the app
+    df["Hospital Name"] = df["Facility_Name_Clean"]
     return df
     
     def get_urgency(days):
