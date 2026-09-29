@@ -373,7 +373,7 @@ with col_map:
         color = URGENCY_HEX.get(row["Urgency"], "#28c76f")
         folium.CircleMarker(
             location=[row["Latitude"], row["Longitude"]], radius=8, color=color, fill=True, fill_color=color, fill_opacity=0.85,
-            popup=f"<b>{row['Hospital Name']}</b><br>Stock: {int(row['Current Medicine Stock'])}<br>Days Left: {row['Days Left']}d"
+            popup=f"<b>{row['Hospital Name']}</b><br>Waste: {int(row['Current_Waste_KG'])} KG<br>Days to Full: {row['Days Left']}d"
         ).add_to(m)
         
     if st.session_state["active"] and routes:
