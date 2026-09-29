@@ -396,13 +396,12 @@ st.markdown('<div class="sec">Comparative Stock Analytics</div>', unsafe_allow_h
 ch1, ch2 = st.columns(2)
 
 with ch1:
-    st.markdown("**Current vs. Projected Stock**")
-    chart_df = df[df["Urgency"].isin(["Critical", "Imminent"])][["Hospital Name", "Current Medicine Stock", "Projected Stock"]]
+    st.markdown("**Current vs. Projected Waste (KG)**")
+    chart_df = df[df["Urgency"].isin(["Critical", "Imminent"])][["Hospital Name", "Current_Waste_KG", "Projected Stock"]]
     if not chart_df.empty:
         st.bar_chart(chart_df.set_index("Hospital Name"))
     else:
-        st.info("Trigger a reroute to see stock redistribution here.")
-
+        st.info("Trigger a reroute to see waste redistribution here.")
 with ch2:
     st.markdown("**Node Status Distribution**")
     st.bar_chart(df["Urgency"].value_counts())
