@@ -245,14 +245,28 @@ def load_data(path="hospitals.csv"):
 
 def enrich_data(raw: pd.DataFrame, surge: float, buffer: int) -> pd.DataFrame:
     df = raw.copy()
-    df["Current Medicine Stock"] = pd.to_numeric(df["Current Medicine Stock"], errors="coerce").fillna(0)
+    df["Current_Waste_KG"] = pd.to_numeric(df["Current_Waste_KG"], errors="coerce").fillna(0)
+    df["Max_Bin_Capacity"] = pd.to_numeric(df["Max_Bin_Capacity"], errors="coerce").fillna(100)
     df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
     df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
     
-    df["Facility Type"] = df["Hospital Name"].apply(infer_facility_type)
-    df["Burn Rate"] = df["Facility Type"].map(lambda t: FACILITY_PROFILES.get(t, {}).get("burn_rate", 3.5))
-    df["Effective Burn"] = (df["Burn Rate"] * surge).round(2)
-    df["Days Left"] = (df["Current Medicine Stock"] / df["Effective Burn"]).round(1)
+    df["Facility Type"] = df["Name"].apply(infer_facility_type)
+    df["Daily_Generation_Rate"] = pd.to_numeric(df["Daily_Generation_Rate"], errors="coerce").fillna(5)
+    df["Effective Generation"] = (df["Daily_Generation_Rate"] * surge).round(2)
+    
+    # Days until bin hits 100% capacity
+    df["Days Left"] = ((df["Max_Bin_Capacity"] - df["Current_Waste_KG"]) / df["Effective Generation"]).round(1)
+    df["Days Left"] = df["Days Left"].apply(lambda x: max(0.1, x)) # prevent negative
+    
+    def get_urgency(days):
+        if days < 1.0: return "Critical"
+        if days < 3.0: return "Imminent"
+        return "Surplus"
+        
+    df["Urgency"] = df["Days Left"].apply(get_urgency)
+    df["Severity Index"] = df["Days Left"].apply(lambda d: round(max(0.0, min(10.0, (5.0 - d) * 2.0)), 1))
+    df["Projected Stock"] = df["Current_Waste_KG"].copy()
+    return df
     
     def get_urgency(days):
         if days < (buffer * 0.6): return "Critical"
@@ -271,37 +285,35 @@ def calculate_reroute(df: pd.DataFrame, cold: bool) -> List[Dict]:
         
     routes, rng = [], random.Random(42)
     pool = VEHICLE_POOL["cold"] if cold else VEHICLE_POOL["standard"]
-    surplus_balances = surplus.set_index("Hospital Name")["Current Medicine Stock"].to_dict()
+    surplus_balances = surplus.set_index("Name")["Current_Waste_KG"].to_dict()
     
     for _, drow in deficit.iterrows():
-        d_name, d_lat, d_lon = drow["Hospital Name"], float(drow["Latitude"]), float(drow["Longitude"])
-        needed = int((drow["Effective Burn"] * 5) - drow["Current Medicine Stock"])
+        d_name, d_lat, d_lon = drow["Name"], float(drow["Latitude"]), float(drow["Longitude"])
+        needed = int(drow["Current_Waste_KG"]) # Waste to be collected from full bin
         if needed <= 0: needed = 10
         
         best_hub, min_dist = None, float("inf")
         for s_name, bal in surplus_balances.items():
-            if bal > 15:
-                srow = surplus[surplus["Hospital Name"] == s_name].iloc[0]
+            if "Incinerator" in str(s_name) or bal < 50: # Target the incinerator hub or low waste nodes
+                srow = surplus[surplus["Name"] == s_name].iloc[0]
                 dist = haversine_km(d_lat, d_lon, float(srow["Latitude"]), float(srow["Longitude"]))
                 if dist < min_dist:
                     min_dist, best_hub = dist, s_name
                     
         if best_hub:
-            alloc = min(needed, int(surplus_balances[best_hub] * 0.5))
-            if alloc > 0:
-                surplus_balances[best_hub] -= alloc
-                s_match = surplus[surplus["Hospital Name"] == best_hub].iloc[0]
-                road_dist = round(min_dist * 1.25, 1)
-                routes.append({
-                    "Origin": best_hub, "Destination": d_name,
-                    "from_lat": float(s_match["Latitude"]), "from_lon": float(s_match["Longitude"]),
-                    "to_lat": d_lat, "to_lon": d_lon,
-                    "Allocated Units": alloc, "Road Distance (km)": road_dist,
-                    "Transit Time (hrs)": round(road_dist / 45.0, 1),
-                    "Vehicle Type": rng.choice(pool),
-                    "Cost (INR)": round(road_dist * 32.0, 0),
-                    "CO2 (kg)": round(road_dist * 0.21, 2)
-                })
+            alloc = needed
+            road_dist = round(min_dist * 1.25, 1)
+            routes.append({
+                "Origin": best_hub, "Destination": d_name,
+                "from_lat": float(surplus[surplus["Name"]==best_hub]["Latitude"].values[0]), 
+                "from_lon": float(surplus[surplus["Name"]==best_hub]["Longitude"].values[0]),
+                "to_lat": d_lat, "to_lon": d_lon,
+                "Allocated Units": alloc, "Road Distance (km)": road_dist,
+                "Transit Time (hrs)": round(road_dist / 45.0, 1),
+                "Vehicle Type": rng.choice(pool),
+                "Cost (INR)": round(road_dist * 32.0, 0),
+                "CO2 (kg)": round(road_dist * 0.21, 2)
+            })
     return routes
 
 # =============================================================================
