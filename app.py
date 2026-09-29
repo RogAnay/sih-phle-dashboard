@@ -247,16 +247,17 @@ def enrich_data(raw: pd.DataFrame, surge: float, buffer: int) -> pd.DataFrame:
     df = raw.copy()
     df["Current_Waste_KG"] = pd.to_numeric(df["Current_Waste_KG"], errors="coerce").fillna(0)
     df["Max_Bin_Capacity"] = pd.to_numeric(df["Max_Bin_Capacity"], errors="coerce").fillna(100)
-    df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
-    df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
+    
+    # Use exact CSV headers 'Lat' and 'Lon'
+    df["Latitude"] = pd.to_numeric(df["Lat"], errors="coerce")
+    df["Longitude"] = pd.to_numeric(df["Lon"], errors="coerce")
     
     df["Facility Type"] = df["Name"].apply(infer_facility_type)
     df["Daily_Generation_Rate"] = pd.to_numeric(df["Daily_Generation_Rate"], errors="coerce").fillna(5)
     df["Effective Generation"] = (df["Daily_Generation_Rate"] * surge).round(2)
     
-    # Days until bin hits 100% capacity
     df["Days Left"] = ((df["Max_Bin_Capacity"] - df["Current_Waste_KG"]) / df["Effective Generation"]).round(1)
-    df["Days Left"] = df["Days Left"].apply(lambda x: max(0.1, x)) # prevent negative
+    df["Days Left"] = df["Days Left"].apply(lambda x: max(0.1, x))
     
     def get_urgency(days):
         if days < 1.0: return "Critical"
