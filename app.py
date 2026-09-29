@@ -294,17 +294,19 @@ def calculate_reroute(df: pd.DataFrame, cold: bool) -> List[Dict]:
         
     routes, rng = [], random.Random(42)
     pool = VEHICLE_POOL["cold"] if cold else VEHICLE_POOL["standard"]
-    surplus_balances = surplus.set_index("Name")["Current_Waste_KG"].to_dict()
+    
+    # FIX: Use "Hospital Name" to match the dataframe column
+    surplus_balances = surplus.set_index("Hospital Name")["Current_Waste_KG"].to_dict()
     
     for _, drow in deficit.iterrows():
-        d_name, d_lat, d_lon = drow["Name"], float(drow["Latitude"]), float(drow["Longitude"])
-        needed = int(drow["Current_Waste_KG"]) # Waste to be collected from full bin
-        if needed <= 0: needed = 10
+        d_name, d_lat, d_lon = drow["Hospital Name"], float(drow["Latitude"]), float(drow["Longitude"])
+        needed = int(drow["Current_Waste_KG"])
+        if <= 0: needed = 10
         
         best_hub, min_dist = None, float("inf")
         for s_name, bal in surplus_balances.items():
-            if "Incinerator" in str(s_name) or bal < 50: # Target the incinerator hub or low waste nodes
-                srow = surplus[surplus["Name"] == s_name].iloc[0]
+            if "Incinerator" in str(s_name) or bal < 50:
+                srow = surplus[surplus["Hospital Name"] == s_name].iloc[0]
                 dist = haversine_km(d_lat, d_lon, float(srow["Latitude"]), float(srow["Longitude"]))
                 if dist < min_dist:
                     min_dist, best_hub = dist, s_name
@@ -314,8 +316,8 @@ def calculate_reroute(df: pd.DataFrame, cold: bool) -> List[Dict]:
             road_dist = round(min_dist * 1.25, 1)
             routes.append({
                 "Origin": best_hub, "Destination": d_name,
-                "from_lat": float(surplus[surplus["Name"]==best_hub]["Latitude"].values[0]), 
-                "from_lon": float(surplus[surplus["Name"]==best_hub]["Longitude"].values[0]),
+                "from_lat": float(surplus[surplus["Hospital Name"] == best_hub]["Latitude"].values[0]), 
+                "from_lon": float(surplus[surplus["Hospital Name"] == best_hub]["Longitude"].values[0]),
                 "to_lat": d_lat, "to_lon": d_lon,
                 "Allocated Units": alloc, "Road Distance (km)": road_dist,
                 "Transit Time (hrs)": round(road_dist / 45.0, 1),
@@ -324,7 +326,6 @@ def calculate_reroute(df: pd.DataFrame, cold: bool) -> List[Dict]:
                 "CO2 (kg)": round(road_dist * 0.21, 2)
             })
     return routes
-
 # =============================================================================
 # §3  SIDEBAR & RUNTIME STATE
 # =============================================================================
