@@ -301,7 +301,7 @@ def calculate_reroute(df: pd.DataFrame, cold: bool) -> List[Dict]:
     for _, drow in deficit.iterrows():
         d_name, d_lat, d_lon = drow["Hospital Name"], float(drow["Latitude"]), float(drow["Longitude"])
         needed = int(drow["Current_Waste_KG"])
-        if <= 0: needed = 10
+        if needed <= 0: needed = 10
         
         best_hub, min_dist = None, float("inf")
         for s_name, bal in surplus_balances.items():
