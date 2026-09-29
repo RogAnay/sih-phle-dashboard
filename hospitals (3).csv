@@ -1,0 +1,13 @@
+Name,Lat,Lon,Current_Waste_KG,Daily_Generation_Rate,Max_Bin_Capacity
+Central Incinerator (Rajkot Hub),22.3000,70.8000,0,0,10000
+Guru Gobind Singh Government Hospital (Jamnagar),22.4700,70.0700,45,15,50
+Samarpan Hospital (Jamnagar),22.4800,70.0500,10,5,50
+Shreeji Hospital (Jamnagar),22.4600,70.0600,90,20,100
+Oswal Hospital (Jamnagar),22.4750,70.0550,5,2,50
+K. P. Shah Hospital (Jamnagar),22.4710,70.0620,40,10,50
+Aastha Hospital (Jamnagar),22.4650,70.0580,25,8,50
+Civil Hospital (Gandhinagar),23.2200,72.6500,85,25,100
+Apollo Hospitals (Gandhinagar),23.2300,72.6400,20,15,50
+Aashka Superspeciality Hospital (Gandhinagar),23.2100,72.6300,48,10,50
+S.M.V.S. Hospital (Gandhinagar),23.2250,72.6450,15,5,50
+Yashdeep Hospital (Gandhinagar),23.2150,72.6350,95,30,100
